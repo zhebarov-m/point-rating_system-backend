@@ -5,7 +5,6 @@ const {
   Rating,
   Subject,
   Teacher,
-  TeacherGroupSubject,
 } = require("../models/models");
 const ApiError = require("../error/ApiError");
 const bcrypt = require("bcrypt");
@@ -19,16 +18,8 @@ const generateJwt = (tokenPayload) => {
 
 class UserController {
   async registration(req, res, next) {
-    const {
-      email,
-      password,
-      first_name,
-      last_name,
-      middle_name,
-      role,
-      group,
-      subjectsId,
-    } = req.body;
+    const { email, password, first_name, last_name, middle_name, role, group } =
+      req.body;
     if (!email || !password) {
       return next(ApiError.badRequest("Некорректный email или password"));
     }
@@ -37,70 +28,88 @@ class UserController {
       return next(ApiError.badRequest("Пользователь с таким email уже есть"));
     }
     const hashPassword = await bcrypt.hash(password, 5);
-    const user = await User.create({
-      email,
-      password: hashPassword,
-      first_name,
-      last_name,
-      middle_name,
-      role,
-      group,
-      subjectsId,
-    });
-    const groupInstance = await Group.findOne({
-      where: { group_name: group },
-    });
-    // const tgs = await TeacherGroupSubject.create({
-    //   teacherId: user.user_id,
-    //   groupId: groupInstance.group_id,
-    //   subjectId: [user.subjectsId],
-    // });
 
-    if (user.role === "TEACHER") {
-      await Teacher.create({
-        userId: user.user_id,
+    let user;
+    if (role === "TEACHER") {
+      user = await User.create({
+        email,
+        password: hashPassword,
+        first_name,
+        last_name,
+        middle_name,
+        role,
       });
-    }
 
-    if (user.role === "STUDENT") {
+      const teacher = await Teacher.create({
+        user_id: user.user_id,
+        // Другие поля учителя
+      });
+
+      // Добавляем связь со учителем
+      await user.setTeacher(teacher);
+    } else if (role === "STUDENT") {
       if (!group) {
         return next(ApiError.badRequest("Не указана группа для студента"));
       }
-      if (!subjectsId) {
-        return next(ApiError.badRequest("Не указан предмет для студента"));
-      }
+
+      const groupInstance = await Group.findOne({
+        where: { group_name: group },
+      });
       if (!groupInstance) {
         return next(ApiError.badRequest("Группа не найдена"));
       }
-      const student = await Student.create({
-        userId: user.user_id,
-        groupId: groupInstance.group_id,
-        course: groupInstance.course,
+
+      user = await User.create({
+        email,
+        password: hashPassword,
+        first_name,
+        last_name,
+        middle_name,
+        role,
+        group,
       });
 
-      const subjects = await Promise.all(
-        subjectsId.map(async (subjectId) => {
-          const subject = await Subject.findByPk(subjectId);
-          if (!subject) {
-            console.log(`Предмет с ID ${subjectId} не найден`);
-            return next(ApiError.badRequest("Предмет не найден"));
-          }
-          console.log(`Создание рейтинга для предмета с ID ${subjectId}`);
-          await Rating.create({
-            semester: 1,
-            groupId: groupInstance.group_id,
-            studentId: student.student_id,
-            subjectId: subject.subject_id,
-          });
-          return subject;
-        })
-      );
+      const student = await Student.create({
+        user_id: user.user_id,
+        // Другие поля студента
+      });
+
+      // Добавляем связь со студентом
+      await user.setStudent(student);
+      // const subjects = await Promise.all(
+      //   subjectsId.map(async (subjectId) => {
+      //     const subject = await Subject.findByPk(subjectId);
+      //     if (!subject) {
+      //       console.log(`Предмет с ID ${subjectId} не найден`);
+      //       return next(ApiError.badRequest("Предмет не найден"));
+      //     }
+      //     console.log(`Создание рейтинга для предмета с ID ${subjectId}`);
+      //     await Rating.create({
+      //       semester: 1,
+      //       groupId: groupInstance.group_id,
+      //       studentId: student.student_id,
+      //       subjectId: subject.subject_id,
+      //     });
+      //     return subject;
+      //   })
+      // );
+    } else if (role === "ADMIN") {
+      user = await User.create({
+        email,
+        password: hashPassword,
+        first_name,
+        last_name,
+        middle_name,
+        role,
+      });
+    } else {
+      return next(ApiError.badRequest("Некорректная роль пользователя"));
     }
 
     const token = generateJwt({
       user_id: user.user_id,
-      email: user.email,
-      role: user.role,
+      email: email,
+      role: role,
     });
 
     return res.json({ token });
@@ -136,12 +145,12 @@ class UserController {
   async remove(req, res, next) {
     try {
       const user_id = req.params.user_id;
-  
+
       const user = await User.findByPk(user_id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-  
+
       if (user.role === "TEACHER") {
         const userId = req.params.user_id;
         const teacher = await Teacher.findOne({ where: { userId } });
@@ -149,7 +158,7 @@ class UserController {
           await teacher.destroy();
         }
       }
-  
+
       if (user.role === "STUDENT") {
         const userId = req.params.user_id;
         const student = await Student.findOne({ where: { userId } });
@@ -157,15 +166,14 @@ class UserController {
           await student.destroy();
         }
       }
-  
+
       await user.destroy();
-  
+
       res.json({ message: "User deleted successfully" });
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
   }
-  
 }
 
 module.exports = new UserController();

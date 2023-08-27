@@ -10,11 +10,7 @@ const User = sequelize.define("user", {
   middle_name: { type: DataTypes.STRING },
   role: { type: DataTypes.STRING, defaultValue: "STUDENT" },
   group: { type: DataTypes.STRING },
-  subjectsId: {
-    type: DataTypes.ARRAY(DataTypes.INTEGER), // Используем массив идентификаторов
-    defaultValue: [], // По умолчанию пустой массив
-  },
-  deleted: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, // Мягкое удаление пользователя
+  deleted: { type: DataTypes.BOOLEAN, defaultValue: false }, // Мягкое удаление пользователя
 });
 
 const Student = sequelize.define("student", {
