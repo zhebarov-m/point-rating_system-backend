@@ -1,5 +1,12 @@
 const ApiError = require("../error/ApiError");
-const { Student, User, Group, Rating, Subject } = require("../models/models");
+const {
+  Student,
+  User,
+  Group,
+  Rating,
+  Subject,
+  TeacherAssignment,
+} = require("../models/models");
 
 class StudentController {
   async create(req, res) {}
@@ -28,11 +35,69 @@ class StudentController {
           model: User,
           as: "user",
         },
+        {
+          model: Group,
+          as: "group",
+          include: {
+            model: TeacherAssignment,
+            as: "teacherAssignments",
+          },
+        },
       ],
     });
     res.json(students);
   }
 
+  async getSubjectRating(req, res, next) {
+    const groupId = req.params.group_id;
+    const subjectId = req.params.subject_id;
+  
+    try {
+      const group = await Group.findByPk(groupId, {
+        include: [
+          {
+            model: Student,
+            as: "students",
+            include: [
+              {
+                model: User,
+                as: "user",
+              },
+              {
+                model: Rating,
+                as: "ratings",
+                where: {
+                  subjectId: subjectId,
+                },
+              },
+            ],
+          },
+        ],
+      });
+  
+      if (!group) {
+        return res.status(404).json({ error: "Group not found" });
+      }
+  
+      const formattedRating = group.students.map((student) => {
+        const user = student.user;
+        const rating = student.ratings.length > 0 ? student.ratings[0].rating_value : null;
+  
+        return {
+          student_id: student.student_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          middle_name: user.middle_name,
+          rating: rating,
+        };
+      });
+  
+      res.status(200).json(formattedRating);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
   // async getAll(req, res, next) {
   //   try {
   //     const { group } = req.params; // Получаем название группы из запроса

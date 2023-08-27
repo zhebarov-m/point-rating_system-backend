@@ -122,20 +122,20 @@ Student.belongsTo(User, { foreignKey: "userId", as: "user" });
 User.hasOne(Teacher, { foreignKey: "userId" });
 Teacher.belongsTo(User, { foreignKey: "userId", as: "user" });
 
-Student.hasMany(Rating, { foreignKey: "studentId" });
-Rating.belongsTo(Student, { foreignKey: "studentId", as: "student" });
+Student.hasMany(Rating, { foreignKey: "studentId", as: "ratings" });
+Rating.belongsTo(Student, { foreignKey: "studentId", as: "students" });
 
 Group.hasMany(Rating, { foreignKey: "groupId" });
 Rating.belongsTo(Group, { foreignKey: "groupId", as: "group" });
 
-Subject.hasMany(Rating, { foreignKey: "subjectId" });
-Rating.belongsTo(Subject, { foreignKey: "subjectId", as: "subject" });
+Subject.hasMany(Rating, { foreignKey: "subjectId", as: "ratings"  });
+Rating.belongsTo(Subject, { foreignKey: "subjectId", as: "subjects" });
 
 Group.hasMany(Student, { foreignKey: "groupId" });
 Student.belongsTo(Group, { foreignKey: "groupId", as: "group" });
 
-Student.belongsToMany(Subject, { through: Rating });
-Subject.belongsToMany(Student, { through: Rating });
+Student.belongsToMany(Subject, { through: Rating, foreignKey: "studentId", as: "students" });
+Subject.belongsToMany(Student, { through: Rating, foreignKey: "subjectId", as: "subjects" });
 
 // // Привязка учителя к нескольким предметам
 // Teacher.belongsToMany(Subject, {through: TeacherSubjects, foreignKey: "teacherId", as: "Subjects",});

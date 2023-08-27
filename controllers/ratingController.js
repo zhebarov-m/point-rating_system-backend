@@ -2,6 +2,40 @@ const ApiError = require("../error/ApiError");
 const { Rating, Student, User, Subject } = require("../models/models");
 
 class RatingController {
+  async create(req, res, next) {
+    try {
+      const { semester, studentId, subjectId, groupId } = req.body; // Получаем studentId, subjectId и groupId из запроса
+
+      if (!studentId || !subjectId || !groupId) {
+        return next(
+          ApiError.badRequest("Некорректные данные для создания рейтинга")
+        );
+      }
+
+      const student = await Student.findByPk(studentId);
+      if (!student) {
+        return next(ApiError.badRequest("Студент не найден"));
+      }
+
+      const subject = await Subject.findByPk(subjectId);
+      if (!subject) {
+        return next(ApiError.badRequest("Предмет не найден"));
+      }
+
+      const rating = await Rating.create({
+        semester,
+        studentId,
+        subjectId,
+        groupId,
+        // Добавьте остальные поля рейтинга с их значениями по умолчанию
+      });
+
+      return res.status(201).json(rating);
+    } catch (error) {
+      next(ApiError.badRequest(error.message));
+    }
+  }
+
   async getAll(req, res, next) {
     try {
       const { groupId, studentId } = req.query;
@@ -10,7 +44,7 @@ class RatingController {
         include: [
           {
             model: Student,
-            as: "student",
+            as: "students",
             include: [
               {
                 model: User,
@@ -20,7 +54,7 @@ class RatingController {
           },
           {
             model: Subject,
-            as: "subject",
+            as: "subjects",
           },
         ],
       };
@@ -40,9 +74,9 @@ class RatingController {
       const formattedRatings = ratings.map((rating) => {
         return {
           rating_id: rating.rating_id,
-          student: `${rating.student?.user.last_name} ${rating.student?.user.first_name} ${rating.student?.user.middle_name}`,
-          subjectId: rating.subject.subject_id,
-          subject: rating.subject.subject_name,
+          student: `${rating.students?.user.last_name} ${rating.students?.user.first_name} ${rating.students?.user.middle_name}`,
+          subjectId: rating.subjects.subject_id,
+          subject: rating.subjects.subject_name,
           semester: rating.semester,
           semester_points: rating.semester_points,
           current_attestation: rating.current_attestation,

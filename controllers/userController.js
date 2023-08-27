@@ -51,9 +51,12 @@ class UserController {
       if (!group) {
         return next(ApiError.badRequest("Не указана группа для студента"));
       }
-
+      console.log('ЧИСЛО ЛИ ЭТО????',typeof group);
+      if (typeof group !== "number") {
+        return next(ApiError.badRequest("Нужно указать числовой ID группы"));
+      }
       const groupInstance = await Group.findOne({
-        where: { group_name: group },
+        where: { group_id: group },
       });
       if (!groupInstance) {
         return next(ApiError.badRequest("Группа не найдена"));
@@ -70,7 +73,8 @@ class UserController {
       });
 
       const student = await Student.create({
-        user_id: user.user_id,
+        userId: user.user_id,
+        groupId: user.group,
         // Другие поля студента
       });
 
