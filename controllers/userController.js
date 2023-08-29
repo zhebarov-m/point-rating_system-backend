@@ -45,7 +45,7 @@ class UserController {
         // Другие поля учителя
       });
 
-      // Добавляем связь со учителем
+      // Добавляю связь со учителем
       await user.setTeacher(teacher);
     } else if (role === "STUDENT") {
       if (!group) {

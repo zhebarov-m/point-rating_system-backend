@@ -54,7 +54,7 @@ class SubjectController {
               };
             } catch (error) {
               console.error("Error formatting assignment:", error);
-              return null; // Пометим ошибочные записи нулевым значением
+              return null; // Пометка ошибочных записей нулевым значением
             }
           }
         );

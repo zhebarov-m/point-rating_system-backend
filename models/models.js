@@ -176,7 +176,7 @@ Group.hasMany(TeacherAssignment, {
 });
 TeacherAssignment.belongsTo(Group, { foreignKey: "groupId" });
 
-// // Устанавливаем связи с внешними ключами
+// // Устанавливаю связи с внешними ключами
 // Teacher.belongsToMany(Subject, {
 //   through: TeacherSubjectGroup,
 //   foreignKey: "teacherId",

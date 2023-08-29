@@ -27,7 +27,6 @@ class RatingController {
         studentId,
         subjectId,
         groupId,
-        // Добавьте остальные поля рейтинга с их значениями по умолчанию
       });
 
       return res.status(201).json(rating);

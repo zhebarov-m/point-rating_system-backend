@@ -191,7 +191,6 @@ class StudentController {
       course: student.group?.course,
       createdAt: student.createdAt,
       updatedAt: student.updatedAt,
-      // Другие поля student, если они вам нужны
     };
 
     return res.json(studentData);
